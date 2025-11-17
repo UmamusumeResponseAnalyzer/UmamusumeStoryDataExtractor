@@ -28,11 +28,17 @@ type TextSource =
         | Story textData -> textData
         | Race textData -> textData
 
+type ChoiceData = {
+    Text: string
+    NextBlock: int
+    DifferenceFlag: int
+}
+
 [<JsonConverter(typeof<TextBlockConverter>)>]
 type TextBlock = {
     Name: string
     Text: string
-    ChoiceDataList: string[]
+    ChoiceDataList: ChoiceData[]
     ColorTextInfoList: string[]
     Siblings: ValueOption<TextBlock[]>
 }
@@ -50,7 +56,11 @@ and TextBlockConverter() =
 
         writer.WriteStartArray("ChoiceDataList")
         for choiceData in value.ChoiceDataList do
-            writer.WriteStringValue(choiceData)
+            writer.WriteStartObject()
+            writer.WriteString("Text", choiceData.Text)
+            writer.WriteNumber("NextBlock", choiceData.NextBlock)
+            writer.WriteNumber("DifferenceFlag", choiceData.DifferenceFlag)
+            writer.WriteEndObject()
         writer.WriteEndArray()
 
         writer.WriteStartArray("ColorTextInfoList")
@@ -243,7 +253,12 @@ module Program =
                                                             let choiceDataList =
                                                                 textClip["ChoiceDataList"] :?> Collections.Generic.IList<obj>
                                                                 |> Seq.cast<Collections.Specialized.OrderedDictionary>
-                                                                |> Seq.map (fun obj -> mayLocalize(obj["Text"] :?> string))
+                                                                |> Seq.map (fun obj -> 
+                                                                { 
+                                                                    Text = mayLocalize(obj["Text"] :?> string)
+                                                                    NextBlock = obj["NextBlock"] :?> int
+                                                                    DifferenceFlag = obj["DifferenceFlag"] :?> int 
+                                                                })
                                                                 |> Seq.toArray
                                                             let colorTextInfoList =
                                                                 textClip["ColorTextInfoList"] :?> Collections.Generic.IList<obj>
